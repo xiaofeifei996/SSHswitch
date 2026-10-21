@@ -55,6 +55,13 @@ else ifeq ($(THEOS_PACKAGE_SCHEME),)
 THEOS_PACKAGE_ARCH = iphoneos-arm
 endif
 
+# RootHide devices load rootless packages from /var/jb/*; the roothide scheme
+# installs into the hidden root instead, which app processes cannot see.
+# Build the rootless *layout* but keep the arm64e package architecture.
+ifeq ($(THEOS_PACKAGE_SCHEME),rootless)
+THEOS_PACKAGE_ARCH = iphoneos-arm64e
+endif
+
 before-stage::
 	$(ECHO_NOTHING)sed -E 's/Architecture: iphoneos-arm.*/Architecture: $(THEOS_PACKAGE_ARCH)/' "$(THEOS_PROJECT_DIR)/control" > "$(THEOS_PROJECT_DIR)/control-$(THEOS_PACKAGE_SCHEME)"$(ECHO_END)
 	$(ECHO_NOTHING)rm -rf $(THEOS_PROJECT_DIR)/layout/usr $(THEOS_PROJECT_DIR)/layout/var$(ECHO_END)
