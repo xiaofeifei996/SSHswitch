@@ -56,7 +56,7 @@ jobs:
           chmod +x layout/DEBIAN/preinst layout/DEBIAN/postinst layout/DEBIAN/prerm layout/DEBIAN/postrm
           chmod +x doc/makeDoc.sh
           make clean
-          make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide 2>&1 | tee build.log
+          make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless 2>&1 | tee build.log
           test -n "$(ls packages/*.deb 2>/dev/null)" || { echo "::error::no deb produced"; exit 1; }
           shasum -a 256 packages/*.deb | tee SHA256SUMS
 
@@ -70,7 +70,9 @@ jobs:
           dpkg-deb -c "$deb"
           tmpd=$(mktemp -d)
           dpkg-deb -x "$deb" "$tmpd"
-          test -x "$tmpd/usr/bin/SSHswitch"
+          test -x "$tmpd/var/jb/usr/bin/SSHswitch"
+          echo "== layout must be rootless (/var/jb) =="
+          dpkg-deb -c "$deb" | grep -q 'var/jb/usr/bin/SSHswitch'
           echo "== entitlements =="
           ldid -e "$tmpd/usr/bin/SSHswitch"
           echo "== archs =="
