@@ -74,10 +74,10 @@ jobs:
           echo "== layout must be rootless (/var/jb) =="
           dpkg-deb -c "$deb" | grep -q 'var/jb/usr/bin/SSHswitch'
           echo "== entitlements =="
-          ldid -e "$tmpd/usr/bin/SSHswitch"
+          ldid -e "$tmpd/var/jb/usr/bin/SSHswitch"
           echo "== archs =="
-          lipo -info "$tmpd/usr/bin/SSHswitch"
-          file "$tmpd/usr/bin/SSHswitch"
+          lipo -info "$tmpd/var/jb/usr/bin/SSHswitch"
+          file "$tmpd/var/jb/usr/bin/SSHswitch"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
