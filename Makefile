@@ -19,7 +19,7 @@ endif
 include $(THEOS)/makefiles/common.mk
 
 TOOL_NAME = SSHswitch
-$(TOOL_NAME)_CFLAGS += -fvisibility=hidden -DBUILD_VERSION="\"$(PACKAGE_VERSION)\""
+$(TOOL_NAME)_CFLAGS += -fvisibility=hidden -DBUILD_VERSION="\"$(PACKAGE_VERSION)\"" -I$(THEOS_PROJECT_DIR)/include
 $(TOOL_NAME)_FILES = SSHswitch.c
 # Theos introduced modularized schemes 2024-02-18 and since that the install prefix is automatic.
 ifeq ($(THEOS_VENDOR_MODULE_PATH),)
