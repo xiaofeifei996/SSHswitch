@@ -50,6 +50,10 @@
 __BEGIN_DECLS
 
 
+#ifndef MAX_KCTL_NAME
+#define MAX_KCTL_NAME 96
+#endif
+
 #define PROC_ALL_PIDS           1
 #define PROC_PGRP_ONLY          2
 #define PROC_TTY_ONLY           3
