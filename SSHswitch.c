@@ -52,6 +52,7 @@
 #include <string.h> // strerror()
 #include <ctype.h> // isdigit() tolower()
 #include <libgen.h> // dirname() basename()
+#include <limits.h> // PATH_MAX
 #include <stdarg.h> // for my log func (va_start & friends)
 #include <sys/stat.h> // stat, mkdir, chmod
 #include <sys/time.h> // utimes, gettimeofday
@@ -239,36 +240,60 @@ touchremove(int dotouch, const char* pathname){
 // paths are dynamic as of v.1.1.0
 static int
 paths() {
+	// RootHide/roothide setups can present the jailbreak root in several ways:
+	//   * JB_ROOT_PATH set by the launcher,
+	//   * /var/jb symlinked to the hidden root (or even to "/"),
+	//   * a plain rootful layout.
+	// Probe every candidate instead of trusting one, and never hand a NULL to
+	// JB_ROOT_PATH() (that used to crash the tool on rootless-but-rooted views).
+	const char * env = getenv("JB_ROOT_PATH");
+	const size_t elen = env ? strlen(env) : 0;
+	const char * dbg = getenv("SSHDEBUG");
 
-	size_t rlen = strlen(rl_root);
-
-	const char * rooted = fp_opensshdc;
-	rooted += rlen;
-
-	_Bool is_rooted = is_file(rooted);
-	_Bool ok_varjb = ( !is_rooted && !is_file(fp_opensshdc) )
-		? 0
-		: 1;
-
-	if ( is_rooted || !ok_varjb ){
-
-		fp_opensshdc += rlen;
-		fp_opensshdp += rlen;
-		pp_launchctl += rlen;
-
-		rl_root = ok_varjb ? "" : getenv("JB_ROOT_PATH");
-
+	static char basebuf[PATH_MAX];
+	const char * bases[3];
+	int bn = 0;
+	if ( elen ) {
+		snprintf(basebuf, sizeof(basebuf), "%s", env);
+		bases[bn++] = basebuf;
 	}
+	bases[bn++] = RL_ROOT; // /var/jb
+	bases[bn++] = "";      // rootful
 
-	if ( !is_file( ok_varjb ? pp_launchctl : JB_ROOT_PATH(pp_launchctl) ) ){
-		// so if cannot find in /bin (Procursus installs it in /usr/bin but makes a link in /bin so it's ok)
-		pp_launchctl = pp_launchctls;
-		if ( !is_file(pp_launchctl) ){
-			return 0;
+	static char cfgbuf[3][PATH_MAX];
+	const char * base = "";
+	for ( int i = 0; i < bn; i++ ){
+		snprintf(cfgbuf[i], PATH_MAX, "%s/etc/ssh/sshd_config", bases[i]);
+		if ( dbg )
+			fprintf(stderr, "SSHDBG cfg candidate '%s' exists=%d\n", cfgbuf[i], is_file(cfgbuf[i]));
+		if ( is_file(cfgbuf[i]) ){
+			base = bases[i];
+			break;
 		}
 	}
+	if ( dbg )
+		fprintf(stderr, "SSHDBG base='%s'\n", base);
 
-	return ok_varjb ? 1 : 2;
+	static char g_cfg[PATH_MAX], g_plist[PATH_MAX], g_lc0[PATH_MAX], g_lc1[PATH_MAX];
+	snprintf(g_cfg,   PATH_MAX, "%s/etc/ssh/sshd_config",            base);
+	snprintf(g_plist, PATH_MAX, "%s/Library/LaunchDaemons/" S_SSHDID ".plist", base);
+	snprintf(g_lc0,   PATH_MAX, "%s/bin/launchctl",                  base);
+	snprintf(g_lc1,   PATH_MAX, "%s/usr/bin/launchctl",              base);
+
+	fp_opensshdc = g_cfg;
+	fp_opensshdp = g_plist;
+	rl_root = base;
+
+	const char * lcs[5] = { g_lc0, g_lc1, "/bin/launchctl", "/usr/bin/launchctl", "/sbin/launchctl" };
+	for ( int i = 0; i < 5; i++ ){
+		if ( dbg )
+			fprintf(stderr, "SSHDBG launchctl candidate '%s' exists=%d\n", lcs[i], is_file(lcs[i]));
+		if ( is_file(lcs[i]) ){
+			pp_launchctl = lcs[i];
+			return 1;
+		}
+	}
+	return 0;
 }
 
 #pragma mark see about NathanLR. What if we just spawn ourselves with the persona... yeah sortof double resources.
