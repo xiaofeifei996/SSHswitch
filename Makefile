@@ -1,7 +1,7 @@
 export TARGET_CODESIGN_FLAGS = -Sentitlements.xml
 # CI installs iPhoneOS15.6.sdk from theos/sdks; pin it so SYSROOT resolves.
 export TARGET = iphone:clang:15.6:11.0
-export ARCHS = arm64
+export ARCHS = arm64 arm64e
 #messages=yes
 export COPYFILE_DISABLE=1
 
@@ -50,7 +50,8 @@ before-package::
 	$(ECHO_NOTHING)rmdir "$(THEOS_STAGING_DIR)$(THEOS_PACKAGE_INSTALL_PREFIX)/var" >/dev/null 2>&1 || true$(ECHO_END)
 
 endif
-else
+else ifeq ($(THEOS_PACKAGE_SCHEME),)
+# rootful only: roothide module supplies iphoneos-arm64e itself
 THEOS_PACKAGE_ARCH = iphoneos-arm
 endif
 
